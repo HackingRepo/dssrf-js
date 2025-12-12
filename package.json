@@ -1,0 +1,46 @@
+{
+  "name": "dssrf",
+  "version": "1.0.0",
+  "description": "A library offer huge of utility and SSRF defense checks.",
+  "keywords": [
+    "ssrf",
+    "safe-http",
+    "secure-url",
+    "nodejs",
+    "web-security"
+  ],
+  "homepage": "https://github.com/HackingRepo/dssrf-js#readme",
+  "bugs": {
+    "url": "https://github.com/HackingRepo/dssrf-js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HackingRepo/dssrf-js.git"
+  },
+  "license": "MIT",
+  "author": "RelunSec",
+  "type": "commonjs",
+  "main": "dist/utils.js",
+  "types": "src/utils.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/utils.js",
+      "require": "./dist/utils.js",
+      "types": "./src/utils.d.ts"
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "dns2": "^2.1.0",
+    "got": "^14.6.5",
+    "ip-cidr": "^4.0.2",
+    "ipaddr.js": "^2.3.0"
+  }
+}
