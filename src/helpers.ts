@@ -4,6 +4,7 @@ import * as ipaddr from "ipaddr.js";
 import CIDR from "ip-cidr";
 const got = require("got").default;
 const DEBUG = false;
+const DSSRF_MAKE_REQUEST = process.env.DSSRF_MAKE_REQUEST;
 
 
 /// This is a helper function used by dssrf for block ipv6 address
@@ -283,36 +284,44 @@ function classify_ips_allow_global_ipv6(ips: string[]): boolean {
 
 
 
-
+/// Fixed dns rebinding protection timing window to be strong against complex dns rebinding attacks
 export async function is_hostname_resolve_to_internal_ip(hostname: string): Promise<boolean> {
     const host = hostname.trim();
 
+    // Direct IP check
     if (ipaddr.isValid(host)) {
         const parsed = ipaddr.parse(host);
-
-        if (parsed.kind() === "ipv6") {
-            return is_ip_internal(parsed.toString()); // block only internal IPv6
-        }
-
         return is_ip_internal(parsed.toString());
     }
 
-    const r1 = await resolve_all_records(host);
-    const ips1 = [...r1.A, ...r1.AAAA];
+    // Helper to resolve with retries
+    async function resolveWithDelay(host: string, attempts: number): Promise<string[]> {
+        const results: string[][] = [];
+        for (let i = 0; i < attempts; i++) {
+            const r = await resolve_all_records(host);
+            const ips = [...r.A, ...r.AAAA];
+            results.push(ips);
+
+            if (i < attempts - 1) {
+                const delay = 100 + Math.floor(Math.random() * 200);
+                await new Promise(r => setTimeout(r, delay));
+            }
+        }
+        return results.flat();
+    }
+
+    const ips1 = await resolveWithDelay(host, 2);
 
     if (ips1.length === 0) return false;
-
     if (classify_ips_allow_global_ipv6(ips1)) return true;
 
-    await new Promise(r => setTimeout(r, 150));
-
-    const r2 = await resolve_all_records(host);
-    const ips2 = [...r2.A, ...r2.AAAA];
+    // Re‑resolve with adaptive strategy
+    const ips2 = await resolveWithDelay(host, 2);
 
     if (ips2.length === 0) return false;
-
     if (classify_ips_allow_global_ipv6(ips2)) return true;
 
+    // Compare sets to detect rebinding
     const set1 = new Set(ips1);
     const set2 = new Set(ips2);
 
@@ -327,21 +336,19 @@ export async function is_hostname_resolve_to_internal_ip(hostname: string): Prom
         }
     }
 
+    // Check CNAME records across both resolutions
+    const r1 = await resolve_all_records(host);
+    const r2 = await resolve_all_records(host);
     for (const cname of [...r1.CNAME, ...r2.CNAME]) {
         if (ipaddr.isValid(cname)) {
             const parsed = ipaddr.parse(cname);
-
-            if (parsed.kind() === "ipv6") {
-                if (is_ip_internal(parsed.toString())) return true;
-                continue;
-            }
-
             if (is_ip_internal(parsed.toString())) return true;
         }
     }
 
     return false;
 }
+
 
 
 
@@ -420,43 +427,43 @@ export function is_proto_safe(url: string): boolean {
 
 
 export async function is_redirect_safe(url: string): Promise<boolean> {
-    try {
-        const response = await got(url, {
-            method: "GET",
-            followRedirect: false,
-            throwHttpErrors: false,
-            timeout: { request: 3000 }
-        });
+  try {
+    let normalized = replace_backslash_with_slash_in_string(url);
+    normalized = remove_at_symbol_in_string(normalized);
 
-        if (response.statusCode < 300 || response.statusCode >= 400) {
-            return true;
-        }
+    let current = new URL(normalized);
 
-        const location = response.headers["location"];
-        if (!location) return false;
+    const MAX_REDIRECTS = 5;
+    for (let i = 0; i < MAX_REDIRECTS; i++) {
+      if (!is_proto_safe(current.protocol)) return false;
+      if (await is_hostname_resolve_to_internal_ip(current.hostname)) return false;
 
-        let normalized = replace_backslash_with_slash_in_string(location);
-        normalized = remove_at_symbol_in_string(normalized);
+      const res = await got(current.toString(), {
+        method: "HEAD",
+        followRedirect: false,
+        throwHttpErrors: false,
+        timeout: { request: 3000 }
+      });
 
-        let parsed: URL;
-        try {
-            parsed = new URL(normalized);
-        } catch {
-            parsed = new URL(normalized, url);
-        }
-
-        const schema = parsed.protocol;
-        if (!is_proto_safe(schema)) return false;
-
-        const host = parsed.hostname;
-        const unsafe = await is_hostname_resolve_to_internal_ip(host);
-        if (unsafe) return false;
-
+      const loc = res.headers.location;
+      if (!loc) {
         return true;
-    } catch {
+      }
+
+      try {
+        current = new URL(loc, current.toString());
+      } catch {
         return false;
+      }
     }
+
+    return false;
+  } catch {
+    return false;
+  }
 }
+
+
 
 
 
@@ -473,48 +480,47 @@ export function normalize_unicode(input: string): string {
 
 
 export async function is_url_safe(url: string): Promise<boolean> {
-    try {
-        let u = normalize_unicode(url);
+  try {
+    let u = normalize_unicode(url);
 
-        u = replace_backslash_with_slash_in_string(u);
-        u = replace_two_slashes_url_to_normal_url(u);
+    u = replace_backslash_with_slash_in_string(u);
+    u = replace_two_slashes_url_to_normal_url(u);
+    u = remove_at_symbol_in_string(u);
 
-        u = remove_at_symbol_in_string(u);
+    const schema = normalize_schema(u);
+    if (!is_proto_safe(schema)) return false;
 
-        const schema = normalize_schema(u);
+    const parsed = new URL(u);
+    const hostname = parsed.hostname;
 
-        if (!is_proto_safe(schema)) {
-            return false;
-        }
-
-        const parsed = new URL(u);
-        const hostname = parsed.hostname;
-
-        if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
-            try {
-                normalize_ipv4(hostname);
-            } catch {
-                return false;
-            }
-        }
-
-        if (is_ipv6(hostname)) {
-            if (is_ip_internal(hostname)) return false;
-        }
-
-        const isInternal = await is_hostname_resolve_to_internal_ip(hostname);
-        if (isInternal) {
-            return false;
-        }
-
-        const redirectSafe = await is_redirect_safe(u);
-        if (!redirectSafe) {
-            return false;
-        }
-
-        return true;
-    } catch {
+    // IPv4 validation
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
+      try {
+        normalize_ipv4(hostname);
+      } catch {
         return false;
+      }
     }
+
+    if (is_ipv6(hostname)) {
+      if (is_ip_internal(hostname)) return false;
+    }
+
+    if (await is_hostname_resolve_to_internal_ip(hostname)) return false;
+
+    if (process.env.DSSRF_CHECK_REDIRECTS === "1") {
+      const redirectSafe = await is_redirect_safe(u);
+      if (!redirectSafe) return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }
+
+
+/// FIXME(): The debug version do not match is_url_safe, We'wll fix it later but for now keep it as is.
+export async function is_url_safe_debug(url: string): Promise<boolean> { try { console.log("STEP 1 input:", url); let u = normalize_unicode(url); console.log("STEP 2 unicode:", u); u = replace_backslash_with_slash_in_string(u); console.log("STEP 3 slashes:", u); u = replace_two_slashes_url_to_normal_url(u); console.log("STEP 4 normalize slashes:", u); u = remove_at_symbol_in_string(u); console.log("STEP 5 remove @:", u); const schema = normalize_schema(u); if (!is_proto_safe(schema)) return false; console.log("STEP 6 schema:", schema); if (!is_proto_safe(u)) { console.log("STEP 7 proto unsafe"); return false; } console.log("STEP 7 proto safe"); const parsed = new URL(u); const hostname = parsed.hostname; console.log("STEP 8 hostname:", hostname); if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) { try { normalize_ipv4(hostname); } catch { console.log("STEP 9 ipv4 invalid"); return false; } } if (is_ipv6(hostname)) { if (is_ip_internal(hostname)) { console.log("STEP 10 ipv6 internal"); return false; } } const isInternal = await is_hostname_resolve_to_internal_ip(hostname); console.log("STEP 11 internal?", isInternal); if (isInternal) { return false; } const redirectSafe = await is_redirect_safe(u); console.log("STEP 12 redirect safe?", redirectSafe); if (!redirectSafe) { return false; } console.log("STEP 13 final: true"); return true; } catch (e) { console.log("ERROR:", e); return false; } }
+
 
