@@ -5,6 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) 
 [![Security](https://img.shields.io/badge/security-SSRF%20defense-critical)](#warning) 
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](package.json)
+[![Audit](https://img.shields.io/badge/audit-passed-brightgreen)](https://github.com/HackingRepo/dssrf/security) 
+[![Code Coverage](https://img.shields.io/codecov/c/github/HackingRepo/dssrf)](https://codecov.io/gh/<your-username>/dssrf) 
+[![Maintainability](https://img.shields.io/codeclimate/maintainability/relunsec/dssrf)](https://codeclimate.com/github/HackingRepo/dssrf) 
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-blue.svg)](#contributions)
 
 `dssrf` is a priotized security‑first URL and network validation library designed to eliminate entire classes of SSRF vulnerabilities - from basic bypasses to extremely advanced bypass techniques used in real‑world attacks.
 
