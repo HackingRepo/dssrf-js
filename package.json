@@ -1,6 +1,6 @@
 {
   "name": "dssrf",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A library offer huge of utility and SSRF defense checks.",
   "keywords": [
     "ssrf",
@@ -38,7 +38,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "dns2": "^2.1.0",
     "got": "^14.6.5",
     "ip-cidr": "^4.0.2",
     "ipaddr.js": "^2.3.0"
