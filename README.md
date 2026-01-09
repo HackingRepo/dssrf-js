@@ -8,6 +8,7 @@
 [![Code Coverage](https://img.shields.io/codecov/c/github/HackingRepo/dssrf-js)](https://codecov.io/gh/HackingRepo/dssrf-js) 
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/relunsec/dssrf)](https://codeclimate.com/github/HackingRepo/dssrf-js) 
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-blue.svg)](#contributions)
+[![Snyk Security](https://snyk.io/test/github/HackingRepo/dssrf-js/badge.svg)](https://snyk.io/test/github/HackingRepo/dssrf-js)
 
 `dssrf` is a priotized security‑first URL and network validation library designed to eliminate entire classes of SSRF vulnerabilities - from basic bypasses to extremely advanced bypass techniques used in real‑world attacks.
 
