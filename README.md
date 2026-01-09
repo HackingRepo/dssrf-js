@@ -1,5 +1,11 @@
 # dssrf — Safe‑by‑Construction SSRF Defense for Node.js
 
+[![npm version](https://img.shields.io/npm/v/dssrf)](https://www.npmjs.com/package/dssrf) 
+[![npm downloads](https://img.shields.io/npm/dm/dssrf)](https://www.npmjs.com/package/dssrf) 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) 
+[![Security](https://img.shields.io/badge/security-SSRF%20defense-critical)](#warning) 
+[![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](package.json)
+
 `dssrf` is a priotized security‑first URL and network validation library designed to eliminate entire classes of SSRF vulnerabilities - from basic bypasses to extremely advanced bypass techniques used in real‑world attacks.
 
 It provides a small set of **strict, deterministic, safe‑by‑construction** functions that developers can use to validate untrusted URLs before making outbound requests.
