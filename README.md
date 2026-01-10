@@ -81,3 +81,4 @@ All contributions are welcome under the MIT license to me.
 # Warning
 
 - **Redirect Safety** By default, `is_redirect_safe()` will **not** make outbound requests unless you explicitly enable it with the environment variable `DSSRF_MAKE_REQUEST=1`. - When disabled, You loose redirect safety. - When enabled, `dssrf` performs controlled HTTP requests (HEAD with `followRedirect: false`) to inspect `Location` headers hop‑by‑hop. - This ensures accurate redirect validation but may expose your server's IP address and timing externally. Use only in environments where outbound validation traffic is acceptable, I recommend disabling it becauses expose your server ip and can cause slowdown and also port scanning/service discovery instead disable following redirects in your http client.
+
