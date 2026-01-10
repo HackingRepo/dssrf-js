@@ -7,6 +7,7 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](package.json)
 [![Code Coverage](https://img.shields.io/codecov/c/github/HackingRepo/dssrf-js)](https://codecov.io/gh/HackingRepo/dssrf-js) 
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/relunsec/dssrf)](https://codeclimate.com/github/HackingRepo/dssrf-js) 
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/HackingRepo/dssrf-js?utm_source=badge) 
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-blue.svg)](#contributions)
 [![Snyk Security](https://snyk.io/test/github/HackingRepo/dssrf-js/badge.svg)](https://snyk.io/test/github/HackingRepo/dssrf-js)
 [![SLSA Level](https://slsa.dev/images/gh-badge-level3.svg)](https://github.com/HackingRepo/dssrf-js)
@@ -79,4 +80,4 @@ All contributions are welcome under the MIT license to me.
 
 # Warning
 
-- **Redirect Safety** By default, `is_redirect_safe()` will **not** make outbound requests unless you explicitly enable it with the environment variable `DSSRF_MAKE_REQUEST=1`. - When disabled, You loose redirect safety. - When enabled, `dssrf` performs controlled HTTP requests (HEAD with `followRedirect: false`) to inspect `Location` headers hop‑by‑hop. - This ensures accurate redirect validation but may expose your server’s IP address and timing externally. Use only in environments where outbound validation traffic is acceptable, I recommend disabling it becauses expose your server ip and can cause slowdown and also port scanning/service discovery instead disable following redirects in your http client.
+- **Redirect Safety** By default, `is_redirect_safe()` will **not** make outbound requests unless you explicitly enable it with the environment variable `DSSRF_MAKE_REQUEST=1`. - When disabled, You loose redirect safety. - When enabled, `dssrf` performs controlled HTTP requests (HEAD with `followRedirect: false`) to inspect `Location` headers hop‑by‑hop. - This ensures accurate redirect validation but may expose your server's IP address and timing externally. Use only in environments where outbound validation traffic is acceptable, I recommend disabling it becauses expose your server ip and can cause slowdown and also port scanning/service discovery instead disable following redirects in your http client.
