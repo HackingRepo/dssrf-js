@@ -19,7 +19,7 @@
 
 It provides a small set of **strict, deterministic, safe‑by‑construction** functions that developers can use to validate untrusted URLs before making outbound requests.
 
-If you only use the global function **`is_url_safe()`**, your application becomes SSRF‑resistant by default.
+If you only use the global function **`is_url_safe()`**, your application benefit all of those SSRF protections by default.
 
 ---
 
