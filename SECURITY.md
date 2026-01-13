@@ -29,7 +29,7 @@ please report it privately to me.
 
 ### 📧 Contact
 
-Send your report to the email **cs7778503@gmail.com**.
+Send your report to the email **<cs7778503@gmail.com>**.
 
 Please include:
 
