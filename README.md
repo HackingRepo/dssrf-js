@@ -5,7 +5,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) 
 [![Security](https://img.shields.io/badge/security-SSRF%20defense-critical)](#warning) 
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](package.json)
-[![Code Coverage](https://img.shields.io/codecov/c/github/HackingRepo/dssrf-js)](https://codecov.io/gh/HackingRepo/dssrf-js) 
 [![Maintainability](https://img.shields.io/codeclimate/maintainability/relunsec/dssrf)](https://codeclimate.com/github/HackingRepo/dssrf-js) 
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/HackingRepo/dssrf-js?utm_source=badge) 
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-blue.svg)](#contributions)
