@@ -1,7 +1,7 @@
 {
   "name": "dssrf",
   "version": "1.0.1",
-  "description": "A library offer huge of utility and SSRF defense checks.",
+  "description": "SSRF defense library for Node.js with safe URL validation utilities.",
   "keywords": [
     "ssrf",
     "safe-http",
@@ -35,14 +35,14 @@
     "bench": "vitest bench --run"
   },
   "devDependencies": {
-    "@codspeed/vitest-plugin": "^5.0.1",
-    "@types/node": "^25.0.1",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "@codspeed/vitest-plugin": "5.0.1",
+    "@types/node": "25.0.8",
+    "typescript": "5.9.3",
+    "vitest": "4.0.17"
   },
   "dependencies": {
-    "got": "^14.6.5",
-    "ip-cidr": "^4.0.2",
-    "ipaddr.js": "^2.3.0"
+    "got": "14.6.6",
+    "ip-cidr": "4.0.2",
+    "ipaddr.js": "2.3.0"
   }
 }
