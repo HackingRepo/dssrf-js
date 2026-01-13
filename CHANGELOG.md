@@ -11,4 +11,4 @@
 - Removed the `^` tag from package.json to improve supply chain security.
 - Improved README.md and SECURITY.md formatting and mismatch between the content of README.md in NPM and Github
 - Removed package-lock.json, Commited by mistake to the repo.
-- Pinned SHA for workflows in Github Repo
+- Pinned SHA for workflows in the Github Repo
