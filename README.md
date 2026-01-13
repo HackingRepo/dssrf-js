@@ -56,7 +56,6 @@ const url = await is_url_safe("https://example.com");
 if (!url) {
   throw new Error("SSRF attempt Detected.");
 }
-
 ```
 
 or for CommonJS style
@@ -69,10 +68,7 @@ const url = await dssrf.is_url_safe("https://example.com");
 if (!url) {
   throw new Error("SSRF attempt Detected.");
 }
-
 ```
-
-
 
 ## Contributions
 All contributions are welcome under the MIT license to me. 
