@@ -1,6 +1,6 @@
 {
   "name": "dssrf",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SSRF defense library for Node.js with safe URL validation utilities.",
   "keywords": [
     "ssrf",
