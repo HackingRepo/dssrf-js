@@ -36,7 +36,7 @@ describe("URL Safety Validation", () => {
   });
 
   bench("is_url_safe - URL with unicode normalization", async () => {
-    await is_url_safe("https://\uff45xample.com");
+    await is_url_safe("https://éxample.com");
   });
 });
 
@@ -86,11 +86,11 @@ describe("Unicode Normalization", () => {
   });
 
   bench("normalize_unicode - NFKC normalization", () => {
-    normalize_unicode("\uff45xample.com");
+    normalize_unicode("éxample.com");
   });
 
   bench("normalize_unicode - mixed characters", () => {
-    normalize_unicode("test\u00e9\u0301.com");
+    normalize_unicode("testé.com");
   });
 
   bench("normalize_unicode - empty string", () => {
