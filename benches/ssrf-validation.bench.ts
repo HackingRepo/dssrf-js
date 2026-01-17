@@ -28,7 +28,11 @@ describe("URL Safety Validation", () => {
   });
 
   bench("is_url_safe - suspicious URL with internal IP", async () => {
-    await is_url_safe("http://127.0.0.1:8080/admin");
+    try {
+      await is_url_safe("http://127.0.0.1:8080/admin");
+    } catch {
+      // expected rejection
+    }
   });
 
   bench("is_url_safe - URL with unicode normalization", async () => {
@@ -62,8 +66,8 @@ describe("IPv4 Normalization", () => {
   bench("normalize_ipv4 - IP with leading zeros rejection", () => {
     try {
       normalize_ipv4("192.168.001.1");
-    } catch (e) {
-      // Expected to throw
+    } catch {
+      // expected throw
     }
   });
 
@@ -96,23 +100,23 @@ describe("Unicode Normalization", () => {
 
 describe("Protocol Safety", () => {
   bench("is_proto_safe - HTTPS", () => {
-    is_proto_safe("https://example.com");
+    is_proto_safe("https:");
   });
 
   bench("is_proto_safe - HTTP", () => {
-    is_proto_safe("http://example.com");
+    is_proto_safe("http:");
   });
 
   bench("is_proto_safe - file protocol", () => {
-    is_proto_safe("file:///etc/passwd");
+    is_proto_safe("file:");
   });
 
   bench("is_proto_safe - ftp protocol", () => {
-    is_proto_safe("ftp://example.com");
+    is_proto_safe("ftp:");
   });
 
   bench("is_proto_safe - javascript protocol", () => {
-    is_proto_safe("javascript:alert(1)");
+    is_proto_safe("javascript:");
   });
 });
 
@@ -146,7 +150,11 @@ describe("String Normalization", () => {
   });
 
   bench("normalize_schema - invalid URL", () => {
-    normalize_schema("not-a-url");
+    try {
+      normalize_schema("not-a-url");
+    } catch {
+      // expected throw
+    }
   });
 });
 
