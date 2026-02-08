@@ -86,7 +86,7 @@ If you find DSSRF useful, consider sponsoring to help sustain development:
 - [OpenCollective](https://opencollective.com/relunsec)  
 - [Ko‑fi](https://ko-fi.com/relunsec)  
 
-## Support DSSRF with Bitcoin
+### Support DSSRF with Bitcoin
 
 DSSRF has reached **12K downloads** and is trusted by the community (OWASP listed, starred by BitBuilder Cloud, verified clean by Snyk).  
 If you’d like to support development with Bitcoin, you can send donations to:
