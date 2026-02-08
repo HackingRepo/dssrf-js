@@ -101,7 +101,7 @@ If you’d like to support development with Bitcoin, you can send donations to:
 - bc1qclj339c45s67w2q8ljwasef27qfcla9tdnmt07
 
 *(More addresses available on request — these are derived from the project’s wallet for rotation and privacy.)*
-`
+
 You can also use bitcoin Lightning Network payment link `lnurlp://mainnet.demo.btcpayserver.org/BTC/UILNURL/2EYDhcF83tdF1Uadtr269Kn88Mxm1P4DpCSACspNasst/pay?currency=USD`.
 
 and also you can use qr code.
