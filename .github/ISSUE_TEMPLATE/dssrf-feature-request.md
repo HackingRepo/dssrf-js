@@ -2,7 +2,7 @@
 name: DSSRF Feature request
 about: Suggest an idea for this project
 title: "[DSSRFEATURE]"
-labels: ''
+labels: 'enhancement'
 assignees: HackingRepo
 
 ---
