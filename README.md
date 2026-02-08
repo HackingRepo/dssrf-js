@@ -96,12 +96,6 @@ If you’d like to support development with Bitcoin, you can send donations to:
 - bc1q6k2mfrd3qsttw43zg5dnuvlmdscfa8pgvkxw9f
 - bc1qvgqnfr3znuqyaatm06ggftjxn0zx3unw5taa3h
 - bc1qclj339c45s67w2q8ljwasef27qfcla9tdnmt07
-- bc1q2dmcp0daemq2ezmvn4m3a646rst3fp0tygamjy
-- bc1qcup8dky54php8reezgtnz9cwkt69w9tfcsz4rx
-- bc1qcg4qd02sqpzll02mkgr9zvpaeater96wrz8sfc
-- bc1qq7wj68443360wsztk0tfak82e8yqxwh8pd3pm9
-- bc1q7nr2f6zmsvpuc5qhhrskf6xwkq8k30cwcxv0vd
-- bc1qs6h4z7ekhwdy2wldphw6lx72xahlzf5rtctseh
 
 *(More addresses available on request — these are derived from the project’s wallet for rotation and privacy.)*
 
