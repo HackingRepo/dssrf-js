@@ -17,7 +17,7 @@ By contributing to dssrf you should not compromise those rules.
 Ensure your changes do not introduce security risks or new ssrf bypasses to dssrf.
 
 ### Perfomance
-Ensure your changes do not slowdown dssrf or make request longer.
+Ensure your changes do not slowdown dssrf or make requests longer.
 
 ### FPS
 Ensure your changes not introduce false positives and block legitimate traffic and urls.
