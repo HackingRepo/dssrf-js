@@ -1,7 +1,7 @@
 # FUNDING.yml
 # This file tells GitHub where to send sponsorship traffic
 
-github: [HackingRepo]        # Replace with your GitHub username
+github: HackingRepo
 patreon: RelunSec     
 open_collective: relunsec
 ko_fi: relunsec
