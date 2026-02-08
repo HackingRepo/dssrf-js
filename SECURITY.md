@@ -27,7 +27,7 @@ If you believe you have found one of:
 
 please report it privately to me.
 
-### 📧 Contact
+### Contact
 
 Send your report to the email **<cs7778503@gmail.com>**.
 
@@ -40,6 +40,12 @@ Please include:
 - environment details NodeJS version and os version
 
 You will receive a response as quickly as possible between 1 day and 3 days or even in hours depends in my situation.
+
+---
+
+### Snyk Report
+
+You can also report to snyk if you not want via email, you can report it using [Snyk](https://snyk.io/vulnerability-disclosure).
 
 ---
 
