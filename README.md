@@ -106,4 +106,4 @@ You can also use bitcoin Lightning Network payment link `lnurlp://mainnet.demo.b
 
 and also you can use qr code.
 
-![Lighting qr](https://drive.google.com/file/d/1zyXIi4Ys2T6WbxyAE4GCCK8JLK15zFU8/view?usp=sharing)
+![Lighting qr](https://drive.google.com/file/d/1zyXIi4Ys2T6WbxyAE4GCCK8JLK15zFU8)
