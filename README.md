@@ -105,4 +105,5 @@ If you’d like to support development with Bitcoin, you can send donations to:
 You can also use bitcoin Lightning Network payment link `lnurlp://mainnet.demo.btcpayserver.org/BTC/UILNURL/2EYDhcF83tdF1Uadtr269Kn88Mxm1P4DpCSACspNasst/pay?currency=USD`.
 
 Or via scan the qr code, in your mobile app via
+
 <img width="205" height="205" alt="BTC Qr Code" src="https://github.com/user-attachments/assets/cba56b04-a1de-4431-b08e-17bd4db8c8cd" />
