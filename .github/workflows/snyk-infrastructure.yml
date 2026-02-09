@@ -8,35 +8,34 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   snyk:
+    runs-on: ubuntu-latest
     permissions:
       contents: read 
       security-events: write 
       actions: read 
-    runs-on: ubuntu-latest  # Required to fix the job failure
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # Pinned to specific SHA
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 
 
       - name: Setup Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # Pinned to specific SHA
+        # SCORECARD FIX: Pinned SHA of the official setup action
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 
         with:
-          node-version: '20' 
-          cache: 'npm'
-          cache-dependency-path: package.json
+          node-version: '20'
 
       - name: Install Dependencies
-        uses: bahmutov/npm-install@c35a7cb7334c91342dde34eab45b35a0065d7f38
-        with:
-          useRollingCache: true
-        
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@e2221410bff24446ba09102212d8bc75a567237d # Pinned to specific SHA
+        run: |
+          npm install --package-lock-only
+          npm install
+        shell: bash
+
+      - name: Run Snyk Code (SAST)
+        uses: snyk/actions/node@e2221410bff24446ba09102212d8bc75a567237d 
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -45,7 +44,7 @@ jobs:
           args: --sarif-file-output=snyk-results.sarif
 
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7 # Pinned to specific SHA
+        uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7 
         if: always()
         with:
           sarif_file: snyk-results.sarif
