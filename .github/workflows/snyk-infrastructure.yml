@@ -14,7 +14,7 @@ on:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   schedule:
-    - cron: '21 15 * * 4'
+    - cron: '* * * * *'
 
 permissions:
   contents: read
@@ -28,14 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
-      - name: Run Snyk to check configuration files for security issues
-        # Snyk can be used to break the build when it detects security issues.
-        # In this case we want to upload the issues to GitHub Code Scanning
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@e2221410bff24446ba09102212d8bc75a567237d
         continue-on-error: true
-        uses: snyk/actions/iac@14818c4695ecc4045f33c9cee9e795a788711ca4
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7
         with:
-          sarif_file: snyk-results.sarif
+          args: --sarif-file-output=snyk-results.sarif
