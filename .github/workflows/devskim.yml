@@ -6,7 +6,11 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '* * * * *'
+    - cron: '0 0 * * *' # FIX: Running every minute is a security/resource risk; changed to daily.
+
+# SCORECARD & SOLARWINDS FIX: 
+# This defines top-level permissions as read-only for the entire workflow.
+permissions: read-all
 
 jobs:
   lint:
@@ -18,12 +22,18 @@ jobs:
       security-events: write
     steps:
       - name: Checkout code
+        # Pinned to specific SHA for immutable security
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
 
       - name: Run DevSkim scanner
         uses: microsoft/DevSkim-Action@4b5047945a44163b94642a1cecc0d93a3f428cc6
+        with:
+          # FIX: DevSkim needs to know where to save the results so the next step can find them.
+          directory-to-scan: .
+          output-filename: devskim-results.sarif
 
       - name: Upload DevSkim scan results to GitHub Security tab
+        if: always()
         uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7
         with:
           sarif_file: devskim-results.sarif
