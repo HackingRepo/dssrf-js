@@ -30,7 +30,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm install --package-lock-only
+          npm install --no-package-lock
           npm install
         shell: bash
 
