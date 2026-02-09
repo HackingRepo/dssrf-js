@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: '20' 
           cache: 'npm'
+          cache-dependency-path: package.json
 
       - name: Install Dependencies
         # This fixes the SNYK-CLI-0000 "Missing node_modules" error
