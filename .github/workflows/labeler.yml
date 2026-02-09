@@ -1,12 +1,17 @@
 name: "Pull Request Labeler"
+on:
+  - pull_request_target
 
-on: pull_request_target
+permissions:
+  contents: none
 
 jobs:
   label:
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # Only give it exactly what it needs to label
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/labeler@77a4082b841706ac431479b7e2bb11216ffef250
+      - uses: actions/labeler@77a4082b841706ac431479b7e2bb11216ffef250 # Pinned SHA
+        with:
+          repo-token: "${{ secrets.LABELER_TOKEN }}"
