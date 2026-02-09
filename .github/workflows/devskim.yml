@@ -1,0 +1,29 @@
+name: DevSkim
+
+on:
+  push:
+    branches: [ "main", "DSSRF_Branch_Rule" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '* * * * *'
+
+jobs:
+  lint:
+    name: DevSkim
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+
+      - name: Run DevSkim scanner
+        uses: microsoft/DevSkim-Action@4b5047945a44163b94642a1cecc0d93a3f428cc6
+
+      - name: Upload DevSkim scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7
+        with:
+          sarif_file: devskim-results.sarif
