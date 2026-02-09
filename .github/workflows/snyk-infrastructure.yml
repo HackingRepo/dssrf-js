@@ -31,8 +31,9 @@ jobs:
           cache-dependency-path: package.json
 
       - name: Install Dependencies
-        # This fixes the SNYK-CLI-0000 "Missing node_modules" error
-        run: npm install 
+        uses: bahmutov/npm-install@c35a7cb7334c91342dde34eab45b35a0065d7f38
+        with:
+          useRollingCache: true
         
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@e2221410bff24446ba09102212d8bc75a567237d # Pinned to specific SHA
