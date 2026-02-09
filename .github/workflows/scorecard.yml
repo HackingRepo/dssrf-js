@@ -1,0 +1,46 @@
+name: Scorecard supply-chain security
+on:
+  schedule:
+    - cron: '36 5 * * 0'
+  push:
+    # Added your research branch so it actually runs!
+    branches: [ "main", "DSSRF_Branch_Rule" ]
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    # Removed the 'if' condition so it runs on your current branch
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: "Run analysis"
+        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # This uses OIDC, NO API KEY REQUIRED for public repos
+          publish_results: true
+
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - name: "Upload to code-scanning"
+        uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7
+        with:
+          sarif_file: results.sarif
