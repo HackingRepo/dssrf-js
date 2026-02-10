@@ -14,6 +14,7 @@
 [![Open Source Helpers](https://www.codetriage.com/hackingrepo/dssrf-js/badges/users.svg)](https://www.codetriage.com/hackingrepo/dssrf-js)
 [![Contributors](https://img.shields.io/github/contributors/HackingRepo/dssrf-js)](https://github.com/HackingRepo/dssrf-js/graphs/contributors)
 [![CodeQL](https://github.com/HackingRepo/dssrf-js/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/github-code-scanning/codeql)
+[![CodeQL Advanced](https://github.com/HackingRepo/dssrf-js/actions/workflows/codeql.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/codeql.yml)
 
 `dssrf` is a priotized security‑first URL and network validation library designed to eliminate entire classes of SSRF vulnerabilities - from basic bypasses to extremely advanced bypass techniques used in real‑world attacks.
 
