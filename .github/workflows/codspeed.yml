@@ -21,9 +21,10 @@ jobs:
       - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
           node-version: "22"
+          cache: 'npm'
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@c35a7cb7334c91342dde34eab45b35a0065d7f38
+        run: npm ci
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@9a74b6ba663684052277e8f342b5eb99c7442a03
