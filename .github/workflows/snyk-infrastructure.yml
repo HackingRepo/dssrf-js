@@ -36,7 +36,7 @@ jobs:
           useRollingCache: true
         
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@e2221410bff24446ba09102212d8bc75a567237d # Pinned to specific SHA
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # Pinned to specific SHA
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
