@@ -35,7 +35,7 @@
     "bench": "vitest bench --run"
   },
   "devDependencies": {
-    "@codspeed/vitest-plugin": "5.1.0",
+    "@codspeed/vitest-plugin": "5.2.0",
     "@types/node": "25.2.2",
     "typescript": "5.9.3",
     "vitest": "4.0.18"
