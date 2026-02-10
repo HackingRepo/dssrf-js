@@ -23,15 +23,12 @@ jobs:
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 
 
       - name: Setup Node.js
-        # SCORECARD FIX: Pinned SHA of the official setup action
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Dependencies
-        run: |
-          npm install --no-package-lock
-          npm install
+        run: npm ci
         shell: bash
 
       - name: Run Snyk Code (SAST)
