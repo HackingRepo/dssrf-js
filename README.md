@@ -16,6 +16,7 @@
 [![CodeQL](https://github.com/HackingRepo/dssrf-js/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/github-code-scanning/codeql)
 [![CodeQL Advanced](https://github.com/HackingRepo/dssrf-js/actions/workflows/codeql.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/codeql.yml)
 [![CodSpeed](https://github.com/HackingRepo/dssrf-js/actions/workflows/codspeed.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/codspeed.yml)
+[![DevSkim](https://github.com/HackingRepo/dssrf-js/actions/workflows/devskim.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/devskim.yml)
 
 `dssrf` is a priotized security‑first URL and network validation library designed to eliminate entire classes of SSRF vulnerabilities - from basic bypasses to extremely advanced bypass techniques used in real‑world attacks.
 
