@@ -24,8 +24,6 @@ jobs:
 
       - name: Install dependencies
         uses: bahmutov/npm-install@c35a7cb7334c91342dde34eab45b35a0065d7f38
-        with:
-          useRollingCache: true
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@9a74b6ba663684052277e8f342b5eb99c7442a03
