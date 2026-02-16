@@ -41,7 +41,7 @@ jobs:
           args: --sarif-file-output=snyk-results.sarif
 
       - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@7434149006143a4d75b82a2f411ef15b03ccc2d7 
+        uses: github/codeql-action/upload-sarif@ad5a6c0147a3a8754a04fd6f7ac7c176951ec56e 
         if: always()
         with:
           sarif_file: snyk-results.sarif

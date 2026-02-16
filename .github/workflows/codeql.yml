@@ -39,7 +39,7 @@ jobs:
 
     - name: Initialize CodeQL
       # Pinned SHA (v3 equivalent)
-      uses: github/codeql-action/init@7434149006143a4d75b82a2f411ef15b03ccc2d7
+      uses: github/codeql-action/init@ad5a6c0147a3a8754a04fd6f7ac7c176951ec56e
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
@@ -47,6 +47,6 @@ jobs:
         queries: security-extended,security-and-quality
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@7434149006143a4d75b82a2f411ef15b03ccc2d7
+      uses: github/codeql-action/analyze@ad5a6c0147a3a8754a04fd6f7ac7c176951ec56e
       with:
         category: "/language:${{matrix.language}}"
