@@ -15,7 +15,6 @@
 [![Contributors](https://img.shields.io/github/contributors/HackingRepo/dssrf-js)](https://github.com/HackingRepo/dssrf-js/graphs/contributors)
 [![CodeQL](https://github.com/HackingRepo/dssrf-js/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/github-code-scanning/codeql)
 [![CodeQL Advanced](https://github.com/HackingRepo/dssrf-js/actions/workflows/codeql.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/codeql.yml)
-[![CodSpeed](https://github.com/HackingRepo/dssrf-js/actions/workflows/codspeed.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/codspeed.yml)
 [![DevSkim](https://github.com/HackingRepo/dssrf-js/actions/workflows/devskim.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/devskim.yml)
 [![Node.js CI](https://github.com/HackingRepo/dssrf-js/actions/workflows/node.js.yml/badge.svg)](https://github.com/HackingRepo/dssrf-js/actions/workflows/node.js.yml)
 
