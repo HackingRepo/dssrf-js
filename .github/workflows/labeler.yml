@@ -12,6 +12,6 @@ jobs:
       pull-requests: write # Only give it exactly what it needs to label
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/labeler@77a4082b841706ac431479b7e2bb11216ffef250 # Pinned SHA
+      - uses: actions/labeler@e52e4fb63ed5cd0e07abaad9826b2a893ccb921f # Pinned SHA
         with:
           repo-token: "${{ secrets.LABELER_TOKEN }}"
