@@ -34,7 +34,7 @@ jobs:
           publish_results: true
 
       - name: "Upload artifact"
-        uses: actions/upload-artifact@47309c993abb98030a35d55ef7ff34b7fa1074b5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: SARIF file
           path: results.sarif
