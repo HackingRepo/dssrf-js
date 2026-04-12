@@ -41,7 +41,7 @@
     "vitest": "4.1.3"
   },
   "dependencies": {
-    "got": "15.0.0",
+    "got": "15.0.1",
     "ip-cidr": "4.0.2",
     "ipaddr.js": "2.3.0"
   }
