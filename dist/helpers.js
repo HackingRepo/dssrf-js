@@ -221,9 +221,32 @@ function is_ip_internal(ip) {
     }
     if (parsed.kind() === "ipv6") {
         const range = parsed.range();
-        return (range === "loopback" ||
-            range === "linkLocal" ||
-            range === "uniqueLocal");
+        if (range !== "unicast") {
+            // Check for IPv4-mapped or IPv4-compatible addresses
+            if (range === "ipv4Mapped" || range === "rfc6145") {
+                try {
+                    // @ts-ignore
+                    const ipv4 = parsed.toIPv4Address();
+                    return is_ip_internal(ipv4.toString());
+                }
+                catch {
+                    return true;
+                }
+            }
+            return true;
+        }
+        // Additional manual blocks for IPv6
+        const extraBadRanges = [
+            ipaddr.parseCIDR("64:ff9b:1::/48"),
+            ipaddr.parseCIDR("5f00::/8"),
+            ipaddr.parseCIDR("3fff::/20"),
+            ipaddr.parseCIDR("fec0::/10"),
+        ];
+        for (const [range, bits] of extraBadRanges) {
+            // @ts-ignore
+            if (parsed.match(range, bits))
+                return true;
+        }
     }
     return false;
 }
@@ -409,7 +432,7 @@ async function is_url_safe(url) {
         if (!is_proto_safe(schema))
             return false;
         const parsed = new URL(u);
-        const hostname = parsed.hostname;
+        const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
         // IPv4 validation
         if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
             try {
@@ -457,7 +480,7 @@ async function is_url_safe_debug(url) { try {
     }
     console.log("STEP 7 proto safe");
     const parsed = new URL(u);
-    const hostname = parsed.hostname;
+    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
     console.log("STEP 8 hostname:", hostname);
     if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
         try {
