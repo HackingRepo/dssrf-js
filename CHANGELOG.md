@@ -12,3 +12,13 @@
 - Improved README.md and SECURITY.md formatting and mismatch between the content of README.md in NPM and Github
 - Removed package-lock.json, Commited by mistake to the repo.
 - Pinned SHA for workflows in the Github Repo
+
+## 1.0.3
+
+⚠️ Security Updates:
+- Fix GHSA-8p33-q827-ghj5 vuln
+
+### Other Changes
+- That affects only build from source, fixed tsconfig.json, to allow build to successed
+- Fix README.md, wrong claim for IPv6
+
