@@ -32,7 +32,7 @@ jobs:
         shell: bash
 
       - name: Run Snyk Code (SAST)
-        uses: snyk/actions/node@e2221410bff24446ba09102212d8bc75a567237d 
+        uses: snyk/actions/node@9cf6ca713d71123d2d229cc3d7f145b96ea3c518 
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
