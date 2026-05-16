@@ -43,6 +43,6 @@
   "dependencies": {
     "got": "15.0.3",
     "ip-cidr": "4.0.2",
-    "ipaddr.js": "2.3.0"
+    "ipaddr.js": "2.4.0"
   }
 }
