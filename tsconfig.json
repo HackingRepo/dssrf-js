@@ -6,7 +6,10 @@
     "strict": true,
     "declaration": true,
     "outDir": "dist",
-    "esModuleInterop": true
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["node"]
   },
   "include": ["src"]
 }

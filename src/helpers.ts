@@ -507,12 +507,16 @@ export async function is_url_safe(url: string): Promise<boolean> {
 
     u = replace_backslash_with_slash_in_string(u);
     u = replace_two_slashes_url_to_normal_url(u);
-    u = remove_at_symbol_in_string(u);
 
     const schema = normalize_schema(u);
     if (!is_proto_safe(schema)) return false;
 
     const parsed = new URL(u);
+
+    // Reject userinfo — credentials before '@' are never needed for safe outbound
+    // requests and are a classic SSRF bypass vector (e.g. http://evil@127.0.0.1/)
+    if (parsed.username !== "" || parsed.password !== "") return false;
+
     const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
 
     // IPv4 validation
