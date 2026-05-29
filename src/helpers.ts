@@ -451,9 +451,9 @@ export function is_proto_safe(url: string): boolean {
 export async function is_redirect_safe(url: string): Promise<boolean> {
   try {
     let normalized = replace_backslash_with_slash_in_string(url);
-    normalized = remove_at_symbol_in_string(normalized);
 
     let current = new URL(normalized);
+    if (current.username !== "" || current.password !== "") return false;
 
     const MAX_REDIRECTS = 5;
     for (let i = 0; i < MAX_REDIRECTS; i++) {
@@ -474,6 +474,7 @@ export async function is_redirect_safe(url: string): Promise<boolean> {
 
       try {
         current = new URL(loc, current.toString());
+        if (current.username !== "" || current.password !== "") return false;
       } catch {
         return false;
       }

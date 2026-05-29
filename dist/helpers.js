@@ -386,8 +386,9 @@ function is_proto_safe(url) {
 async function is_redirect_safe(url) {
     try {
         let normalized = replace_backslash_with_slash_in_string(url);
-        normalized = remove_at_symbol_in_string(normalized);
         let current = new URL(normalized);
+        if (current.username !== "" || current.password !== "")
+            return false;
         const MAX_REDIRECTS = 5;
         for (let i = 0; i < MAX_REDIRECTS; i++) {
             if (!is_proto_safe(current.protocol))
@@ -406,6 +407,8 @@ async function is_redirect_safe(url) {
             }
             try {
                 current = new URL(loc, current.toString());
+                if (current.username !== "" || current.password !== "")
+                    return false;
             }
             catch {
                 return false;
@@ -427,11 +430,14 @@ async function is_url_safe(url) {
         let u = normalize_unicode(url);
         u = replace_backslash_with_slash_in_string(u);
         u = replace_two_slashes_url_to_normal_url(u);
-        u = remove_at_symbol_in_string(u);
         const schema = normalize_schema(u);
         if (!is_proto_safe(schema))
             return false;
         const parsed = new URL(u);
+        // Reject userinfo — credentials before '@' are never needed for safe outbound
+        // requests and are a classic SSRF bypass vector (e.g. http://evil@127.0.0.1/)
+        if (parsed.username !== "" || parsed.password !== "")
+            return false;
         const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
         // IPv4 validation
         if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
