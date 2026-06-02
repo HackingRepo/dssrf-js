@@ -448,17 +448,22 @@ export function is_proto_safe(url: string): boolean {
 
 
 
+async function is_parsed_url_safe(parsed: URL): Promise<boolean> {
+    if (!is_proto_safe(parsed.protocol)) return false;
+    if (parsed.username !== "" || parsed.password !== "") return false;
+    // WHATWG URL includes brackets in .hostname for IPv6 (e.g. "[::1]"); strip them
+    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+    if (await is_hostname_resolve_to_internal_ip(hostname)) return false;
+    return true;
+}
+
 export async function is_redirect_safe(url: string): Promise<boolean> {
   try {
-    let normalized = replace_backslash_with_slash_in_string(url);
-    normalized = remove_at_symbol_in_string(normalized);
-
-    let current = new URL(normalized);
+    let current = new URL(replace_backslash_with_slash_in_string(url));
 
     const MAX_REDIRECTS = 5;
     for (let i = 0; i < MAX_REDIRECTS; i++) {
-      if (!is_proto_safe(current.protocol)) return false;
-      if (await is_hostname_resolve_to_internal_ip(current.hostname)) return false;
+      if (!await is_parsed_url_safe(current)) return false;
 
       const res = await got(current.toString(), {
         method: "HEAD",
@@ -468,15 +473,9 @@ export async function is_redirect_safe(url: string): Promise<boolean> {
       });
 
       const loc = res.headers.location;
-      if (!loc) {
-        return true;
-      }
+      if (!loc) return true;
 
-      try {
-        current = new URL(loc, current.toString());
-      } catch {
-        return false;
-      }
+      current = new URL(loc, current.toString());
     }
 
     return false;
@@ -504,35 +503,15 @@ export function normalize_unicode(input: string): string {
 export async function is_url_safe(url: string): Promise<boolean> {
   try {
     let u = normalize_unicode(url);
-
     u = replace_backslash_with_slash_in_string(u);
     u = replace_two_slashes_url_to_normal_url(u);
-    u = remove_at_symbol_in_string(u);
-
-    const schema = normalize_schema(u);
-    if (!is_proto_safe(schema)) return false;
 
     const parsed = new URL(u);
-    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
 
-    // IPv4 validation
-    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
-      try {
-        normalize_ipv4(hostname);
-      } catch {
-        return false;
-      }
-    }
-
-    if (is_ipv6(hostname)) {
-      if (is_ip_internal(hostname)) return false;
-    }
-
-    if (await is_hostname_resolve_to_internal_ip(hostname)) return false;
+    if (!await is_parsed_url_safe(parsed)) return false;
 
     if (process.env.DSSRF_CHECK_REDIRECTS === "1") {
-      const redirectSafe = await is_redirect_safe(u);
-      if (!redirectSafe) return false;
+      if (!await is_redirect_safe(u)) return false;
     }
 
     return true;

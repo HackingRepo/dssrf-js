@@ -1,4 +1,5 @@
 "use strict";
+//! A module contain all utilities for SSRF mitigation
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.is_url_safe_debug = exports.is_url_safe = exports.replace_two_slashes_url_to_normal_url = exports.replace_backslash_with_slash_in_string = exports.remove_at_symbol_in_string = exports.octal_ip_to_normal_ip = exports.normalize_unicode = exports.normalize_schema = exports.normalize_ipv4 = exports.is_redirect_safe = exports.is_range_not_internal = exports.is_proto_safe = exports.is_hostname_resolve_to_internal_ip = exports.hex_ip_to_normal_ip = exports.decimal_ip_to_normal_ip = exports.bin_ip_to_normal_ip = exports.is_ipv6 = void 0;
 var helpers_1 = require("./helpers");
