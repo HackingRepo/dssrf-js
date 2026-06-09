@@ -33,4 +33,4 @@
 ## 1.0.5
 
 ⚠️ Security Updates:
-- Fix Claude Mythos finded GHSA-5846-7qm3-r52j
+- Fix finded GHSA-5846-7qm3-r52j
