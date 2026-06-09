@@ -270,17 +270,24 @@ export function is_ip_internal(ip: string): boolean {
 import { promises as dns } from "dns";
 
 async function resolve_all_records(host: string) {
-    const A = await dns.resolve4(host).catch(() => []);
-    const AAAA = await dns.resolve6(host).catch(() => []);
-    const CNAME = await dns.resolveCname(host).catch(() => []);
+    const [A, AAAA, CNAME] = await Promise.all([
+        dns.resolve4(host).catch(() => [] as string[]),
+        dns.resolve6(host).catch(() => [] as string[]),
+        dns.resolveCname(host).catch(() => [] as string[])
+    ]);
 
-    return {
-        A,
-        AAAA,
-        CNAME
-    };
+    if (A.length === 0 && AAAA.length === 0) {
+        try {
+            const lookups = await dns.lookup(host, { all: true });
+            for (const entry of lookups) {
+                if (entry.family === 4) A.push(entry.address);
+                if (entry.family === 6) AAAA.push(entry.address);
+            }
+        } catch {}
+    }
+
+    return { A, AAAA, CNAME };
 }
-
 
 
 
@@ -523,5 +530,4 @@ export async function is_url_safe(url: string): Promise<boolean> {
 
 /// FIXME(): The debug version do not match is_url_safe, We'wll fix it later but for now keep it as is.
 export async function is_url_safe_debug(url: string): Promise<boolean> { try { console.log("STEP 1 input:", url); let u = normalize_unicode(url); console.log("STEP 2 unicode:", u); u = replace_backslash_with_slash_in_string(u); console.log("STEP 3 slashes:", u); u = replace_two_slashes_url_to_normal_url(u); console.log("STEP 4 normalize slashes:", u); u = remove_at_symbol_in_string(u); console.log("STEP 5 remove @:", u); const schema = normalize_schema(u); if (!is_proto_safe(schema)) return false; console.log("STEP 6 schema:", schema); if (!is_proto_safe(u)) { console.log("STEP 7 proto unsafe"); return false; } console.log("STEP 7 proto safe"); const parsed = new URL(u); const hostname = parsed.hostname.replace(/^\[|\]$/g, ""); console.log("STEP 8 hostname:", hostname); if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) { try { normalize_ipv4(hostname); } catch { console.log("STEP 9 ipv4 invalid"); return false; } } if (is_ipv6(hostname)) { if (is_ip_internal(hostname)) { console.log("STEP 10 ipv6 internal"); return false; } } const isInternal = await is_hostname_resolve_to_internal_ip(hostname); console.log("STEP 11 internal?", isInternal); if (isInternal) { return false; } const redirectSafe = await is_redirect_safe(u); console.log("STEP 12 redirect safe?", redirectSafe); if (!redirectSafe) { return false; } console.log("STEP 13 final: true"); return true; } catch (e) { console.log("ERROR:", e); return false; } }
-
 
