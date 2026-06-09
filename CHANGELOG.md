@@ -22,3 +22,10 @@
 - That affects only build from source, fixed tsconfig.json, to allow build to successed
 - Fix README.md, wrong claim for IPv6
 
+## 1.0.4
+
+⚠️ Security Updates:
+- Fix GHSA-cg4g-m8jx-vjv2 vuln
+
+#### Other Changes
+- Update SECURITY.md, to say to users patches will arrive with Tuesday matching the standard Patch tuesday
