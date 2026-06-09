@@ -29,3 +29,8 @@
 
 #### Other Changes
 - Update SECURITY.md, to say to users patches will arrive with Tuesday matching the standard Patch tuesday
+
+## 1.0.5
+
+⚠️ Security Updates:
+- Fix Claude Mythos finded GHSA-5846-7qm3-r52j
