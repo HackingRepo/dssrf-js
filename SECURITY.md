@@ -29,7 +29,7 @@ please report it privately to me.
 
 ### Contact
 
-Send your report to the email **<cs7778503@gmail.com>**.
+Send your report to the email **<relunsec@insitetech.jp>** no longer **<cs7778503@gmail.com>** the old email.
 
 Please include:
 
@@ -80,6 +80,13 @@ Out-of-scope:
 
 ---
 
+## Patch Day
+
+Patches before arrives in any day, but now will be vulns patched in Tuesday of the next week to match the standard patch **Tuesday** phenomen, So security researchers need not leak vulns via PRs and issues anymore, they need use those above
+reporting methods.
+
+---
+
 ## Thank You
 
-Your efforts help keep the ecosystem safer and more secure.  
+Your efforts help keep the ecosystem safer and more secure. 
