@@ -252,14 +252,24 @@ function is_ip_internal(ip) {
 }
 const dns_1 = require("dns");
 async function resolve_all_records(host) {
-    const A = await dns_1.promises.resolve4(host).catch(() => []);
-    const AAAA = await dns_1.promises.resolve6(host).catch(() => []);
-    const CNAME = await dns_1.promises.resolveCname(host).catch(() => []);
-    return {
-        A,
-        AAAA,
-        CNAME
-    };
+    const [A, AAAA, CNAME] = await Promise.all([
+        dns_1.promises.resolve4(host).catch(() => []),
+        dns_1.promises.resolve6(host).catch(() => []),
+        dns_1.promises.resolveCname(host).catch(() => [])
+    ]);
+    if (A.length === 0 && AAAA.length === 0) {
+        try {
+            const lookups = await dns_1.promises.lookup(host, { all: true });
+            for (const entry of lookups) {
+                if (entry.family === 4)
+                    A.push(entry.address);
+                if (entry.family === 6)
+                    AAAA.push(entry.address);
+            }
+        }
+        catch { }
+    }
+    return { A, AAAA, CNAME };
 }
 function classify_ips_allow_global_ipv6(ips) {
     for (const ip of ips) {
