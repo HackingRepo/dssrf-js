@@ -33,7 +33,13 @@ const BAD_RANGE_USED_IN_SSRF: CIDR[] = [
     new CIDR("203.0.113.0/24"),
     new CIDR("224.0.0.0/4"),
     new CIDR("240.0.0.0/4"),
+    new CIDR("168.63.129.16/32"),
+    new CIDR("192.52.193.0/24"),
+    new CIDR("192.88.99.0/24"),
+    new CIDR("192.31.196.0/24"),
+    new CIDR("192.175.48.0/24")
 ];
+
 
 function compareIPs(a: ipaddr.IPv4 | ipaddr.IPv6, b: ipaddr.IPv4 | ipaddr.IPv6): number {
     const ab = a.toByteArray();
