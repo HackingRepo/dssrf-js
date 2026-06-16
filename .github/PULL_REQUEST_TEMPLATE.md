@@ -41,4 +41,3 @@
 - [ ] I have read the **CONTRIBUTING** document.
 - [ ] I have added tests to cover my changes.
 - [ ] All new and existing tests passed.
-- [ ] I added a picture of a cute animal cause it's fun
