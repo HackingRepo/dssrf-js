@@ -84,6 +84,11 @@ const BAD_RANGE_USED_IN_SSRF = [
     new ip_cidr_1.default("203.0.113.0/24"),
     new ip_cidr_1.default("224.0.0.0/4"),
     new ip_cidr_1.default("240.0.0.0/4"),
+    new ip_cidr_1.default("168.63.129.16/32"),
+    new ip_cidr_1.default("192.52.193.0/24"),
+    new ip_cidr_1.default("192.88.99.0/24"),
+    new ip_cidr_1.default("192.31.196.0/24"),
+    new ip_cidr_1.default("192.175.48.0/24")
 ];
 function compareIPs(a, b) {
     const ab = a.toByteArray();
