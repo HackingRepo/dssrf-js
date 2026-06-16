@@ -22,15 +22,31 @@
 - That affects only build from source, fixed tsconfig.json, to allow build to successed
 - Fix README.md, wrong claim for IPv6
 
+
 ## 1.0.4
 
 ⚠️ Security Updates:
 - Fix GHSA-cg4g-m8jx-vjv2 vuln
 
-#### Other Changes
+### Other Changes
 - Update SECURITY.md, to say to users patches will arrive with Tuesday matching the standard Patch tuesday
+
 
 ## 1.0.5
 
 ⚠️ Security Updates:
 - Fix finded GHSA-5846-7qm3-r52j
+
+
+## 1.0.6
+
+### New IPs ranges added:
+- 168.63.129.16/32 for microsoft azure, another ip, no longer for metadata
+  but still reachable and have other useful informations to attackers
+- added other special and reserved ips, while not malicious themselves, it is a good idea
+  to add those, since have no legitimate reasons to be in there
+
+### Other Changes
+- Fix a typo in CONTRIBUTING.md, dssrf instead of url-sheriff
+- Remove "I added a picture", from CONTRIBUTING.md, we forget it
+
