@@ -8,7 +8,6 @@ on:
   schedule:
     - cron: '0 13 * * *' 
 
-# SCORECARD FIX: Top-level permission restriction (SolarWinds Defense)
 permissions: read-all
 
 jobs:
@@ -16,7 +15,7 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     
-    # Job-level permissions (Least Privilege)
+    # Restrict job permissions
     permissions:
       security-events: write # Required to upload results
       packages: read         # Required for CodeQL packs
@@ -34,16 +33,15 @@ jobs:
 
     steps:
     - name: Checkout repository
-      # Pinned SHA (v4.2.2 equivalent)
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
+      # changed to v7, because it includes supply chain security changes
+      uses: actions/checkout@1044a6dea927916f2c38ba5aeffbc0a847b1221a 
 
     - name: Initialize CodeQL
-      # Pinned SHA (v3 equivalent)
+      # v3
       uses: github/codeql-action/init@5e7a52feb2a3dfb87f88be2af33b9e2275f48de6
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
-        # Added security-extended to find deeper SSRF issues
         queries: security-extended,security-and-quality
 
     - name: Perform CodeQL Analysis
