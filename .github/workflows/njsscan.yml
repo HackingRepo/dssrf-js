@@ -10,7 +10,7 @@ on:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   schedule:
-    - cron: '* * * * *'
+    - cron: '6 6 * * 2'
 
 permissions:
   contents: read
@@ -18,14 +18,14 @@ permissions:
 jobs:
   njsscan:
     permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+      contents: read
+      security-events: write
+      actions: read
     runs-on: ubuntu-latest
     name: njsscan code scanning
     steps:
     - name: Checkout the code
-      uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+      uses: actions/checkout@1044a6dea927916f2c38ba5aeffbc0a847b1221a
     - name: nodejsscan scan
       id: njsscan
       uses: ajinabraham/njsscan-action@7237412fdd36af517e2745077cedbf9d6900d711
