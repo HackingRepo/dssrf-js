@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '1 6 * * 2'
 
 permissions: read-all
 
@@ -20,7 +20,7 @@ jobs:
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 
+        uses: actions/checkout@1044a6dea927916f2c38ba5aeffbc0a847b1221a 
 
       - name: Setup Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 
