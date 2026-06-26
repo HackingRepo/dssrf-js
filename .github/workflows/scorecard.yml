@@ -1,7 +1,7 @@
 name: Scorecard supply-chain security
 on:
   schedule:
-    - cron: '36 5 * * 0'
+    - cron: '36 6 * * *'
   push:
     # Added your research branch so it actually runs!
     branches: [ "main", "DSSRF_Branch_Rule" ]
@@ -12,7 +12,6 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
-    # Removed the 'if' condition so it runs on your current branch
     permissions:
       security-events: write
       id-token: write
@@ -21,7 +20,7 @@ jobs:
 
     steps:
       - name: "Checkout code"
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@1044a6dea927916f2c38ba5aeffbc0a847b1221a
         with:
           persist-credentials: false
 
@@ -30,7 +29,6 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          # This uses OIDC, NO API KEY REQUIRED for public repos
           publish_results: true
 
       - name: "Upload artifact"
