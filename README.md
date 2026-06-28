@@ -83,9 +83,6 @@ All contributions are welcome under the MIT license to me.
 
 ## Support DSSRF
 
-DSSRF has reached **180K downloads** and is trusted by the community (OWASP listed, starred by BitBuilder Cloud, verified clean by Snyk).  
-If you find DSSRF useful, consider sponsoring to help sustain development:  
-
-- [Patreon](https://patreon.com/RelunSec)  
-- [OpenCollective](https://opencollective.com/relunsec)  
-- [Ko‑fi](https://ko-fi.com/relunsec)  
+- DSSRF has reached 180,407 downloads and is trusted by the community (OWASP listed, starred by BitBuilder Cloud, verified clean by Snyk).
+- If you find DSSRF useful, consider sponsoring to help sustain development.
+- For business collaboration, partnership opportunities, technical support, or general inquiries, please check our company website: [InsiteTech.jp](https://insitetech.jp)
