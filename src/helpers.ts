@@ -1,12 +1,44 @@
-//! This module is an internal module, not intended to be imported all public apis in utils
+//! Internal module. The public surface is re-exported from utils.
 
 import * as ipaddr from "ipaddr.js";
-import CIDR from "ip-cidr";
-import * as net from "node:net"; // Added for net.isIPv6 check
-const got = require("got").default;
-const DEBUG = false;
-const DSSRF_MAKE_REQUEST = process.env.DSSRF_MAKE_REQUEST;
+import { promises as dns } from "node:dns";
+import * as net from "node:net";
 
+// SSRF ranges list, includes no RFC, ones
+const BAD_RANGE_USED_IN_SSRF: string[] = [
+    "0.0.0.0/8",          // this network            RFC 1122
+    "10.0.0.0/8",         // private                 RFC 1918
+    "100.64.0.0/10",      // carrier-grade NAT       RFC 6598
+    "127.0.0.0/8",        // loopback                RFC 1122
+    "169.254.0.0/16",     // link-local + metadata   RFC 3927
+    "172.16.0.0/12",      // private                 RFC 1918
+    "192.0.0.0/24",       // IETF protocol assignm.  RFC 6890
+    "192.0.2.0/24",       // TEST-NET-1              RFC 5737
+    "192.31.196.0/24",    // AS112-v4                RFC 7535
+    "192.52.193.0/24",    // AMT                     RFC 7450
+    "192.88.99.0/24",     // 6to4 relay anycast      RFC 7526
+    "192.168.0.0/16",     // private                 RFC 1918
+    "192.175.48.0/24",    // direct delegation AS112 RFC 7534
+    "198.18.0.0/15",      // benchmarking            RFC 2544
+    "198.51.100.0/24",    // TEST-NET-2              RFC 5737
+    "203.0.113.0/24",     // TEST-NET-3              RFC 5737
+    "224.0.0.0/4",        // multicast               RFC 5771
+    "240.0.0.0/4",        // reserved + broadcast    RFC 1112
+    "168.63.129.16/32",   // Azure wire server
+    "100.100.100.200/32", // Alibaba Cloud metadata
+];
+
+// Same as below but for IPv6
+const BAD_RANGE_IPV6: string[] = [
+    "64:ff9b:1::/48",     // NAT64 local-use         RFC 8215
+    "5f00::/16",          // SRv6 SIDs               RFC 9602
+    "3fff::/20",          // documentation           RFC 9637
+    "fec0::/10",          // deprecated site-local
+    "100::/64",           // discard-only            RFC 6666
+];
+
+const PARSED_BAD_V4 = BAD_RANGE_USED_IN_SSRF.map(c => ipaddr.parseCIDR(c));
+const PARSED_BAD_V6 = BAD_RANGE_IPV6.map(c => ipaddr.parseCIDR(c));
 
 /// This is a helper function used by dssrf for block ipv6 address
 export function is_ipv6(ip: string): boolean {
@@ -17,34 +49,75 @@ export function is_ipv6(ip: string): boolean {
     }
 }
 
+/**
+ * IPv4-mapped (`::ffff:0:0/96`) is the one IPv6 form that is a legitimate way
+ * to write an IPv4 address, so it must classify as the address it carries.
+ * Returns the address, or null.
+ */
+function mapped_ipv4(addr: ipaddr.IPv6): string | null {
+    const b = addr.toByteArray();
+    for (let i = 0; i < 10; i++) if (b[i] !== 0) return null;
+    if (b[10] !== 0xff || b[11] !== 0xff) return null;
+    return `${b[12]}.${b[13]}.${b[14]}.${b[15]}`;
+}
 
-const BAD_RANGE_USED_IN_SSRF: CIDR[] = [
-    new CIDR("0.0.0.0/8"),
-    new CIDR("10.0.0.0/8"),
-    new CIDR("127.0.0.0/8"),
-    new CIDR("169.254.0.0/16"),
-    new CIDR("172.16.0.0/12"),
-    new CIDR("192.168.0.0/16"),
-    new CIDR("100.64.0.0/10"),
-    new CIDR("192.0.0.0/24"),
-    new CIDR("192.0.2.0/24"),
-    new CIDR("198.18.0.0/15"),
-    new CIDR("198.51.100.0/24"),
-    new CIDR("203.0.113.0/24"),
-    new CIDR("224.0.0.0/4"),
-    new CIDR("240.0.0.0/4"),
-    new CIDR("168.63.129.16/32"),
-    new CIDR("192.52.193.0/24"),
-    new CIDR("192.88.99.0/24"),
-    new CIDR("192.31.196.0/24"),
-    new CIDR("192.175.48.0/24")
-];
+// Determines if a given IPv6 address belongs to a known transition mechanism.
+function is_transition_prefix(addr: ipaddr.IPv6): boolean {
+    const b = addr.toByteArray();
+    const zero = (from: number, to: number) => {
+        for (let i = from; i < to; i++) if (b[i] !== 0) return false;
+        return true;
+    };
+    if (zero(0, 12)) return true;                                                     // ::/96           IPv4-compatible
+    if (zero(0, 8) && b[8] === 0xff && b[9] === 0xff && zero(10, 12)) return true;     // ::ffff:0:0:0/96 RFC 6145
+    if (b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b) return true; // 64:ff9b::/32    NAT64 (well-known + local-use)
+    if (b[0] === 0x20 && b[1] === 0x02) return true;                                   // 2002::/16       6to4
+    return false;
+}
 
+function matches(addr: ipaddr.IPv4 | ipaddr.IPv6, list: ReturnType<typeof ipaddr.parseCIDR>[]): boolean {
+    for (const [range, bits] of list) {
+        if (range.kind() !== addr.kind()) continue;
+        try {
+            // @ts-ignore - match() is family-checked above
+            if (addr.match(range, bits)) return true;
+        } catch { /* family mismatch */ }
+    }
+    return false;
+}
 
+// Check is a raw ip is internal or no
+export function is_ip_internal(ip: string): boolean {
+    let parsed: ipaddr.IPv4 | ipaddr.IPv6;
+    try {
+        if (!ipaddr.isValid(ip)) return true;   // unparseable, refuse
+        parsed = ipaddr.parse(ip);
+    } catch {
+        return true;
+    }
+
+    if (parsed.kind() === "ipv6") {
+        const v6 = parsed as ipaddr.IPv6;
+        // IPv4-mapped is a real way to write an IPv4 address, classify it as one.
+        const mapped = mapped_ipv4(v6);
+        if (mapped !== null) return is_ip_internal(mapped);
+        // Every other transition prefix is refused outright.
+        if (is_transition_prefix(v6)) return true;
+        if (v6.range() !== "unicast") return true;
+        return matches(v6, PARSED_BAD_V6);
+    }
+
+    const v4 = parsed as ipaddr.IPv4;
+    if (v4.range() !== "unicast") return true;
+    return matches(v4, PARSED_BAD_V4);
+}
+
+// That function compares two ip addresses
 function compareIPs(a: ipaddr.IPv4 | ipaddr.IPv6, b: ipaddr.IPv4 | ipaddr.IPv6): number {
     const ab = a.toByteArray();
     const bb = b.toByteArray();
 
+    if (ab.length !== bb.length) return ab.length < bb.length ? -1 : 1;
     for (let i = 0; i < ab.length; i++) {
         if (ab[i] < bb[i]) return -1;
         if (ab[i] > bb[i]) return 1;
@@ -52,488 +125,321 @@ function compareIPs(a: ipaddr.IPv4 | ipaddr.IPv6, b: ipaddr.IPv4 | ipaddr.IPv6):
     return 0;
 }
 
+interface CidrLike { start(): string; end(): string }
 
-
-
-export function is_range_not_internal(ipr: CIDR): boolean {
-    const start = ipaddr.parse(ipr.start());
-    const end = ipaddr.parse(ipr.end());
-
-    for (const bad of BAD_RANGE_USED_IN_SSRF) {
-        const badStart = ipaddr.parse(bad.start());
-        const badEnd = ipaddr.parse(bad.end());
-
-        const overlaps =
-            compareIPs(start, badEnd) <= 0 &&
-            compareIPs(end, badStart) >= 0;
-
-        if (overlaps) {
-            return false;
+// Check an ip or cidr like object is not internal
+export function is_range_not_internal(ipr: string | CidrLike): boolean {
+    let startStr: string;
+    let endStr: string;
+    try {
+        if (typeof ipr === "string") {
+            const [addr, bits] = ipaddr.parseCIDR(ipr);
+            const bytes = addr.toByteArray();
+            const width = bytes.length * 8;
+            const host = width - bits;
+            const startB = bytes.slice();
+            const endB = bytes.slice();
+            for (let i = 0; i < host; i++) {
+                const idx = bytes.length - 1 - (i >> 3);
+                startB[idx] &= ~(1 << (i & 7)) & 0xff;
+                endB[idx] |= (1 << (i & 7)) & 0xff;
+            }
+            const build = (arr: number[]) => (bytes.length === 4
+                ? ipaddr.fromByteArray(arr).toString()
+                : ipaddr.fromByteArray(arr).toString());
+            startStr = build(startB);
+            endStr = build(endB);
+        } else {
+            startStr = ipr.start();
+            endStr = ipr.end();
         }
+    } catch {
+        return false;   // unparseable, treat as internal
     }
 
+    let start: ipaddr.IPv4 | ipaddr.IPv6;
+    let end: ipaddr.IPv4 | ipaddr.IPv6;
+    try {
+        start = ipaddr.parse(startStr);
+        end = ipaddr.parse(endStr);
+    } catch {
+        return false;
+    }
+
+    const bad = start.kind() === "ipv4" ? BAD_RANGE_USED_IN_SSRF : BAD_RANGE_IPV6;
+    for (const cidr of bad) {
+        let badStart: ipaddr.IPv4 | ipaddr.IPv6;
+        let badEnd: ipaddr.IPv4 | ipaddr.IPv6;
+        try {
+            const [a, bits] = ipaddr.parseCIDR(cidr);
+            if (a.kind() !== start.kind()) continue;
+            const bytes = a.toByteArray();
+            const host = bytes.length * 8 - bits;
+            const s = bytes.slice();
+            const e = bytes.slice();
+            for (let i = 0; i < host; i++) {
+                const idx = bytes.length - 1 - (i >> 3);
+                s[idx] &= ~(1 << (i & 7)) & 0xff;
+                e[idx] |= (1 << (i & 7)) & 0xff;
+            }
+            badStart = ipaddr.fromByteArray(s);
+            badEnd = ipaddr.fromByteArray(e);
+        } catch { continue; }
+
+        if (compareIPs(start, badEnd) <= 0 && compareIPs(end, badStart) >= 0) return false;
+    }
+
+    // A range of IPv6 unicast space still has to clear the per-address rules.
+    if (start.kind() === "ipv6" && (is_ip_internal(startStr) || is_ip_internal(endStr))) return false;
     return true;
 }
 
 /// An internal helper to convert octal ip to normal ip
 export function octal_ip_to_normal_ip(octal: string) {
     const parts = octal.split(".");
-
-    if (parts.length !== 4) {
-        throw new Error("Invalid IPv4 address format.");
-    }
-
+    if (parts.length !== 4) throw new Error("Invalid IPv4 address format.");
     const decimalParts = parts.map((part) => {
-        if (part.length === 0) {
-            throw new Error("Invalid empty octet");
-        }
-
-        if (!/^[0-7]+$/.test(part)) {
-            throw new Error(`Invalid octal digit in '${part}'`);
-        }
-
+        if (part.length === 0) throw new Error("Invalid empty octet");
+        if (!/^[0-7]+$/.test(part)) throw new Error(`Invalid octal digit in '${part}'`);
         const value = parseInt(part, 8);
-
-        if (value < 0 || value > 255) {
-            throw new Error(`Octet out of range after conversion: '${part}' -> ${value}`);
-        }
-
+        if (value < 0 || value > 255) throw new Error(`Octet out of range after conversion: '${part}' -> ${value}`);
         return String(value);
     });
-
     return decimalParts.join(".");
 }
 
 /// An internal helper to convert hex ip to normal ip
 export function hex_ip_to_normal_ip(hex: string): string {
-    const cleaned = hex.toLowerCase().startsWith("0x")
-        ? hex.slice(2)
-        : hex;
-
-
-    if (!/^[0-9a-f]{8}$/.test(cleaned)) {
-        throw new Error(`Invalid hex IPv4 address: '${hex}'`);
-    }
-
+    const cleaned = hex.toLowerCase().startsWith("0x") ? hex.slice(2) : hex;
+    if (!/^[0-9a-f]{8}$/.test(cleaned)) throw new Error(`Invalid hex IPv4 address: '${hex}'`);
     const num = parseInt(cleaned, 16);
-
-    const o1 = (num >> 24) & 0xFF;
-    const o2 = (num >> 16) & 0xFF;
-    const o3 = (num >> 8) & 0xFF;
-    const o4 = num & 0xFF;
-
-    return `${o1}.${o2}.${o3}.${o4}`;
-
+    return `${(num >>> 24) & 0xFF}.${(num >>> 16) & 0xFF}.${(num >>> 8) & 0xFF}.${num & 0xFF}`;
 }
-
-
 
 /// An internal helper to convert bin ip to normal ip
 export function bin_ip_to_normal_ip(bin: string): string {
     let cleaned = bin.trim();
-
-    if (cleaned.toLowerCase().startsWith("0b")) {
-        cleaned = cleaned.slice(2);
-    }
-
+    if (cleaned.toLowerCase().startsWith("0b")) cleaned = cleaned.slice(2);
     if (cleaned.includes(".")) {
         const parts = cleaned.split(".");
-        if (parts.length !== 4) {
-            throw new Error(`Invalid binary IPv4 address: '${bin}'`);
-        }
-
+        if (parts.length !== 4) throw new Error(`Invalid binary IPv4 address: '${bin}'`);
         const octets = parts.map(p => {
-            if (!/^[01]{8}$/.test(p)) {
-                throw new Error(`Invalid binary IPv4 octet: '${p}' in '${bin}'`);
-            }
+            if (!/^[01]{8}$/.test(p)) throw new Error(`Invalid binary IPv4 octet: '${p}' in '${bin}'`);
             return parseInt(p, 2);
         });
-
         return `${octets[0]}.${octets[1]}.${octets[2]}.${octets[3]}`;
     }
-
-    if (!/^[01]{32}$/.test(cleaned)) {
-        throw new Error(`Invalid binary IPv4 address: '${bin}'`);
-    }
-
+    if (!/^[01]{32}$/.test(cleaned)) throw new Error(`Invalid binary IPv4 address: '${bin}'`);
     const num = parseInt(cleaned, 2);
-
-    const o1 = (num >> 24) & 0xFF;
-    const o2 = (num >> 16) & 0xFF;
-    const o3 = (num >> 8) & 0xFF;
-    const o4 = num & 0xFF;
-
-    return `${o1}.${o2}.${o3}.${o4}`;
+    return `${(num >>> 24) & 0xFF}.${(num >>> 16) & 0xFF}.${(num >>> 8) & 0xFF}.${num & 0xFF}`;
 }
-
 
 /// An internal helper to convert decimal ip to normal ip
 export function decimal_ip_to_normal_ip(decimal: string): string {
-    if (!/^\d+$/.test(decimal)) {
-        throw new Error(`Invalid decimal IPv4: '${decimal}'`);
-    }
-
+    if (!/^\d+$/.test(decimal)) throw new Error(`Invalid decimal IPv4: '${decimal}'`);
     const num = Number(decimal);
-
-    if (!Number.isInteger(num) || num < 0 || num > 0xFFFFFFFF) {
-        throw new Error(`Decimal IPv4 out of range: '${decimal}'`);
-    }
-
-    const a = (num >>> 24) & 0xFF;
-    const b = (num >>> 16) & 0xFF;
-    const c = (num >>> 8) & 0xFF;
-    const d = num & 0xFF;
-
-    return `${a}.${b}.${c}.${d}`;
+    if (!Number.isInteger(num) || num < 0 || num > 0xFFFFFFFF) throw new Error(`Decimal IPv4 out of range: '${decimal}'`);
+    return `${(num >>> 24) & 0xFF}.${(num >>> 16) & 0xFF}.${(num >>> 8) & 0xFF}.${num & 0xFF}`;
 }
-
-
-interface IPv6WithMethods extends ipaddr.IPv6 {
-    isLoopback(): boolean;
-    isIPv4MappedAddress(): boolean;
-    toIPv4Address(): ipaddr.IPv4;
-}
-
-
 
 export function normalize_ipv4(ip: string): string {
     const trimmed = ip.trim();
-
-    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(trimmed)) {
-        throw new Error(`Unsupported IPv4 encoding: '${ip}'`);
-    }
-
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(trimmed)) throw new Error(`Unsupported IPv4 encoding: '${ip}'`);
     const parts = trimmed.split(".");
     const normalizedParts: string[] = [];
-
     for (const part of parts) {
-        if (!/^\d+$/.test(part)) {
-            throw new Error(`Invalid IPv4 octet: '${part}' in '${ip}'`);
-        }
-
+        if (!/^\d+$/.test(part)) throw new Error(`Invalid IPv4 octet: '${part}' in '${ip}'`);
         if (part.length > 1 && part.startsWith("0")) {
             throw new Error(`IPv4 octet with leading zeros is not allowed: '${part}' in '${ip}'`);
         }
-
         const value = Number(part);
-        if (value < 0 || value > 255) {
-            throw new Error(`IPv4 octet out of range: '${part}' in '${ip}'`);
-        }
-
+        if (value < 0 || value > 255) throw new Error(`IPv4 octet out of range: '${part}' in '${ip}'`);
         normalizedParts.push(String(value));
     }
-
     return normalizedParts.join(".");
 }
 
+/// Resolution type alias
+export type Resolution =
+    /** Addresses were observed. */
+    | { kind: "addresses"; addresses: string[] }
+    /** The name genuinely does not exist. A client would fail identically. */
+    | { kind: "nxdomain" }
+    /** The resolver could not answer. We do not know. */
+    | { kind: "unknown"; code: string };
 
+/// That function classifies a dns error, to nxdomain or unknown
+function classifyDnsError(code: string | undefined): "nxdomain" | "unknown" {
 
-export function is_ip_internal(ip: string): boolean {
-    if (!ipaddr.isValid(ip)) return false;
-
-    const parsed = ipaddr.parse(ip);
-
-    if (parsed.kind() === "ipv4") {
-        return parsed.range() !== "unicast";
-    }
-
-    if (parsed.kind() === "ipv6") {
-        const range = parsed.range();
-        if (range !== "unicast") {
-            // Check for IPv4-mapped or IPv4-compatible addresses
-            if (range === "ipv4Mapped" || range === "rfc6145") {
-                try {
-                    // @ts-ignore
-                    const ipv4 = parsed.toIPv4Address();
-                    return is_ip_internal(ipv4.toString());
-                } catch {
-                    return true;
-                }
-            }
-            return true;
-        }
-
-        // Additional manual blocks for IPv6
-        const extraBadRanges = [
-            ipaddr.parseCIDR("64:ff9b:1::/48"),
-            ipaddr.parseCIDR("5f00::/8"),
-            ipaddr.parseCIDR("3fff::/20"),
-            ipaddr.parseCIDR("fec0::/10"),
-        ];
-
-        for (const [range, bits] of extraBadRanges) {
-            // @ts-ignore
-            if (parsed.match(range, bits)) return true;
-        }
-    }
-
-    return false;
+    return code === "ENOTFOUND" || code === "EAI_NONAME" ? "nxdomain" : "unknown";
 }
 
 
+/// A function that resolves a hostname and returns a Resolution promise
+export async function resolve_host(hostname: string): Promise<Resolution> {
+    const host = hostname.trim();
+    const errors: string[] = [];
+    const push = (e: any) => { errors.push(e?.code || "UNKNOWN"); return [] as string[]; };
 
-
-import { promises as dns } from "dns";
-
-async function resolve_all_records(host: string) {
-    const [A, AAAA, CNAME] = await Promise.all([
-        dns.resolve4(host).catch(() => [] as string[]),
-        dns.resolve6(host).catch(() => [] as string[]),
-        dns.resolveCname(host).catch(() => [] as string[])
+    const [lookup, a, aaaa] = await Promise.all([
+        dns.lookup(host, { all: true }).then(r => r.map(e => e.address), push),
+        dns.resolve4(host).catch(push),
+        dns.resolve6(host).catch(push),
     ]);
 
-    if (A.length === 0 && AAAA.length === 0) {
-        try {
-            const lookups = await dns.lookup(host, { all: true });
-            for (const entry of lookups) {
-                if (entry.family === 4) A.push(entry.address);
-                if (entry.family === 6) AAAA.push(entry.address);
-            }
-        } catch {}
-    }
+    const addresses = [...new Set([...lookup, ...a, ...aaaa])];
+    if (addresses.length > 0) return { kind: "addresses", addresses };
 
-    return { A, AAAA, CNAME };
+    // Every path failed. Only a genuine NXDOMAIN from every path is safe to
+    // treat as "does not exist".
+    const allNx = errors.length > 0 && errors.every(c => classifyDnsError(c) === "nxdomain");
+    return allNx ? { kind: "nxdomain" } : { kind: "unknown", code: errors[0] || "UNKNOWN" };
 }
 
-
-
-
-
-function classify_ips_allow_global_ipv6(ips: string[]): boolean {
-    for (const ip of ips) {
-        if (!ipaddr.isValid(ip)) continue;
-
-        const parsed = ipaddr.parse(ip);
-
-        if (parsed.kind() === "ipv6") {
-            if (is_ip_internal(parsed.toString())) return true;
-            continue;
-        }
-
-        if (is_ip_internal(parsed.toString())) return true;
-    }
-    return false;
-}
-
-
-
-
-
-/// Fixed dns rebinding protection timing window to be strong against complex dns rebinding attacks
+/// Check is a hostname resolve to an internal ip
 export async function is_hostname_resolve_to_internal_ip(hostname: string): Promise<boolean> {
     const host = hostname.trim();
 
-    // Direct IP check
-    if (ipaddr.isValid(host)) {
-        const parsed = ipaddr.parse(host);
-        return is_ip_internal(parsed.toString());
-    }
+    if (ipaddr.isValid(host)) return is_ip_internal(ipaddr.parse(host).toString());
 
-    // Helper to resolve with retries
-    async function resolveWithDelay(host: string, attempts: number): Promise<string[]> {
-        const results: string[][] = [];
-        for (let i = 0; i < attempts; i++) {
-            const r = await resolve_all_records(host);
-            const ips = [...r.A, ...r.AAAA];
-            results.push(ips);
-
-            if (i < attempts - 1) {
-                const delay = 100 + Math.floor(Math.random() * 200);
-                await new Promise(r => setTimeout(r, delay));
-            }
-        }
-        return results.flat();
-    }
-
-    const ips1 = await resolveWithDelay(host, 2);
-
-    if (ips1.length === 0) return false;
-    if (classify_ips_allow_global_ipv6(ips1)) return true;
-
-    // Re‑resolve with adaptive strategy
-    const ips2 = await resolveWithDelay(host, 2);
-
-    if (ips2.length === 0) return false;
-    if (classify_ips_allow_global_ipv6(ips2)) return true;
-
-    // Compare sets to detect rebinding
-    const set1 = new Set(ips1);
-    const set2 = new Set(ips2);
-
-    const changed = (
-        set1.size !== set2.size ||
-        [...set1].some(ip => !set2.has(ip))
-    );
-
-    if (changed) {
-        if (classify_ips_allow_global_ipv6([...set1, ...set2])) {
-            return true;
-        }
-    }
-
-    // Check CNAME records across both resolutions
-    const r1 = await resolve_all_records(host);
-    const r2 = await resolve_all_records(host);
-    for (const cname of [...r1.CNAME, ...r2.CNAME]) {
-        if (ipaddr.isValid(cname)) {
-            const parsed = ipaddr.parse(cname);
-            if (is_ip_internal(parsed.toString())) return true;
-        }
-    }
-
-    return false;
+    const res = await resolve_host(host);
+    if (res.kind === "unknown") return true;      // could not check, refuse
+    if (res.kind === "nxdomain") return false;    // does not exist, the fetch fails on its own
+    return res.addresses.some(ip => is_ip_internal(ip));
 }
 
-
-
-
-
+/// Replace backslash with slash, in a string
 export function replace_backslash_with_slash_in_string(s: string): string {
     if (!s) return "";
-
     let u = s.replace(/\\/g, "/");
-
     u = u.replace(/([^:])\/{2,}/g, "$1/");
-
     return u;
 }
 
-
+/// Remove at symbol in a string
 export function remove_at_symbol_in_string(s: string): string {
     return s.replace(/@/g, "");
 }
 
+/// Normalizes a schema, if it cannot it returns nothing
 export function normalize_schema(u: string): string {
     try {
-        const parsed = new URL(u);
-        return parsed.protocol;
+        return new URL(u).protocol;
     } catch {
         return "";
     }
 }
 
-
-
+/// Replaces a two slashes url to a normal url
 export function replace_two_slashes_url_to_normal_url(url: string): string {
     if (!url) return "";
-
     let u = url.trim();
-
-    if (u.startsWith("//")) {
-        return "http:" + u;
-    }
-
+    if (u.startsWith("//")) return "http:" + u;
     u = u.replace(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/(?!\/)/, "$1://");
-
     u = u.replace(/([^:])\/{2,}/g, "$1/");
-
     return u;
 }
 
+/// Protocol whitelist list
+const ALLOWED_PROTOCOLS: string[] = ["https", "http"];
 
-
-const ALLOWED_PROTOCOLS: string[] = [
-    "https",
-    "http"
-];
-
+/// Check is a proto safe, or no
 export function is_proto_safe(url: string): boolean {
     if (!url) return false;
-
-    const u = url.trim().toLowerCase();
-
-    const match = u.match(/^([a-z0-9+.-]+):/);
-    if (!match) {
-        return false;
-    }
-
-    const scheme = match[1];
-
-    if (!ALLOWED_PROTOCOLS.includes(scheme)) {
-        return false;
-    }
-
-    if (scheme === "http") return true;
-    if (scheme === "https") return true;
-
-    return false;
+    const match = String(url).trim().toLowerCase().match(/^([a-z0-9+.-]+):/);
+    return match ? ALLOWED_PROTOCOLS.includes(match[1]) : false;
 }
 
+/// Check is a hostname is ascii
+function is_ascii_host(hostname: string): boolean {
+    return /^[\x00-\x7F]*$/.test(hostname);
+}
 
+/// Parse the target url, if failed return null
+export function parse_target(url: unknown): URL | null {
+    // Only a string or a URL is a URL. Coercing anything else would turn
+    // ["http://x"] into a real target and send us resolving it.
+    if (url instanceof URL) return url;
+    if (typeof url !== "string") return null;
+    try {
+        let u = replace_backslash_with_slash_in_string(url);
+        u = replace_two_slashes_url_to_normal_url(u);
+        return new URL(u);
+    } catch {
+        return null;
+    }
+}
 
+/// Check is the parsed url safe, or no
 async function is_parsed_url_safe(parsed: URL): Promise<boolean> {
     if (!is_proto_safe(parsed.protocol)) return false;
     if (parsed.username !== "" || parsed.password !== "") return false;
     // WHATWG URL includes brackets in .hostname for IPv6 (e.g. "[::1]"); strip them
     const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+    if (hostname === "") return false;
+    if (!is_ascii_host(hostname)) return false;
     if (await is_hostname_resolve_to_internal_ip(hostname)) return false;
     return true;
 }
 
-export async function is_redirect_safe(url: string): Promise<boolean> {
-  try {
-    let current = new URL(replace_backslash_with_slash_in_string(url));
+/// An interface of a redirect, containing status and opentially a location
+interface HeadResult { status: number; location?: string }
 
-    const MAX_REDIRECTS = 5;
-    for (let i = 0; i < MAX_REDIRECTS; i++) {
-      if (!await is_parsed_url_safe(current)) return false;
+function probe(target: URL, method: string, timeoutMs: number): Promise<HeadResult> {
+    return new Promise((resolve, reject) => {
+        const mod = target.protocol === "https:" ? require("node:https") : require("node:http");
+        const req = mod.request({
+            protocol: target.protocol,
+            hostname: target.hostname.replace(/^\[|\]$/g, ""),
+            port: target.port || (target.protocol === "https:" ? 443 : 80),
+            path: target.pathname + target.search,
+            method,
+        }, (res: any) => {
+            res.resume();
+            resolve({ status: res.statusCode, location: res.headers.location });
+        });
+        req.setTimeout(timeoutMs, () => req.destroy(new Error("timeout")));
+        req.on("error", reject);
+        req.end();
+    });
+}
 
-      const res = await got(current.toString(), {
-        method: "HEAD",
-        followRedirect: false,
-        throwHttpErrors: false,
-        timeout: { request: 3000 }
-      });
+/// Walk a redirect and check is the redirect safe or no, only if it is allowed
+export async function is_redirect_safe(url: string, options: { makeRequest?: boolean } = {}): Promise<boolean> {
+    const allowed = options.makeRequest ?? (process.env.DSSRF_MAKE_REQUEST === "1");
+    try {
+        let current = parse_target(url);
+        if (!current) return false;
 
-      const loc = res.headers.location;
-      if (!loc) return true;
+        const MAX_REDIRECTS = 5;
+        for (let i = 0; i < MAX_REDIRECTS; i++) {
+            if (!await is_parsed_url_safe(current)) return false;
+            if (!allowed) return true;   // first hop verified; no outbound probing requested
 
-      current = new URL(loc, current.toString());
+            const res = await probe(current, "GET", 3000);
+            const redirecting = res.status >= 300 && res.status < 400;
+            if (!redirecting) return true;
+            if (!res.location) return false;   // 3xx without Location: cannot verify
+            current = new URL(res.location, current.toString());
+        }
+        return false;
+    } catch {
+        return false;
     }
-
-    return false;
-  } catch {
-    return false;
-  }
 }
 
-
-
-
-
-
-
-
-
-
-export function normalize_unicode(input: string): string {
-    if (!input) return "";
-    return input.normalize("NFKC");
-}
-
-
-
+/// Check is the URL safe or no
 export async function is_url_safe(url: string): Promise<boolean> {
-  try {
-    let u = normalize_unicode(url);
-    u = replace_backslash_with_slash_in_string(u);
-    u = replace_two_slashes_url_to_normal_url(u);
+    try {
+        const parsed = parse_target(url);
+        if (!parsed) return false;
+        if (!await is_parsed_url_safe(parsed)) return false;
 
-    const parsed = new URL(u);
-
-    if (!await is_parsed_url_safe(parsed)) return false;
-
-    if (process.env.DSSRF_CHECK_REDIRECTS === "1") {
-      if (!await is_redirect_safe(u)) return false;
+        if (process.env.DSSRF_MAKE_REQUEST === "1") {
+            if (!await is_redirect_safe(parsed.toString(), { makeRequest: true })) return false;
+        }
+        return true;
+    } catch {
+        return false;
     }
-
-    return true;
-  } catch {
-    return false;
-  }
 }
-
-
-/// FIXME(): The debug version do not match is_url_safe, We'wll fix it later but for now keep it as is.
-export async function is_url_safe_debug(url: string): Promise<boolean> { try { console.log("STEP 1 input:", url); let u = normalize_unicode(url); console.log("STEP 2 unicode:", u); u = replace_backslash_with_slash_in_string(u); console.log("STEP 3 slashes:", u); u = replace_two_slashes_url_to_normal_url(u); console.log("STEP 4 normalize slashes:", u); u = remove_at_symbol_in_string(u); console.log("STEP 5 remove @:", u); const schema = normalize_schema(u); if (!is_proto_safe(schema)) return false; console.log("STEP 6 schema:", schema); if (!is_proto_safe(u)) { console.log("STEP 7 proto unsafe"); return false; } console.log("STEP 7 proto safe"); const parsed = new URL(u); const hostname = parsed.hostname.replace(/^\[|\]$/g, ""); console.log("STEP 8 hostname:", hostname); if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) { try { normalize_ipv4(hostname); } catch { console.log("STEP 9 ipv4 invalid"); return false; } } if (is_ipv6(hostname)) { if (is_ip_internal(hostname)) { console.log("STEP 10 ipv6 internal"); return false; } } const isInternal = await is_hostname_resolve_to_internal_ip(hostname); console.log("STEP 11 internal?", isInternal); if (isInternal) { return false; } const redirectSafe = await is_redirect_safe(u); console.log("STEP 12 redirect safe?", redirectSafe); if (!redirectSafe) { return false; } console.log("STEP 13 final: true"); return true; } catch (e) { console.log("ERROR:", e); return false; } }
-
