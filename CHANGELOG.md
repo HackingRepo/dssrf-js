@@ -50,3 +50,17 @@
 - Fix a typo in CONTRIBUTING.md, dssrf instead of url-sheriff
 - Remove "I added a picture", from CONTRIBUTING.md, we forget it
 
+
+## 2.0.0
+⚠️ Security Updates:
+- Fix GHSA-xx33-w569-xg7j
+
+### Other Changes
+- Correct downloads and remove dead bitcoin and other useless stuff and cleanup README
+- Remove `is_url_safe_debug` function and `normalize_url`
+- The added new ip range detections are broken, now the thing fixed
+- Make Redirect Flag is broken and it does not enable at all redirect checks
+- IPV6 disabled claim removed from README.md
+
+**NOTE**: That is a breaking release of DSSRF, the `is_url_safe` function kept read more, [README](./README.md)
+
