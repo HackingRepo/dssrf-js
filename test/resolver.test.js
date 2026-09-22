@@ -82,7 +82,7 @@ describe('resolution is cheap', () => {
       const t = Date.now();
       await dssrf.is_url_safe('http://timing.test/');
       const ms = Date.now() - t;
-      assert.ok(ms < 500, `${ms}ms (1.0.7 slept 200-600ms by design)`);
+      assert.ok(ms < 500, `${ms}ms`);
     } finally { stub.restore(); }
   });
 });
