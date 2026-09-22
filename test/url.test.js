@@ -13,7 +13,6 @@ describe('internal destinations are refused through the URL API', () => {
     'http://169.254.169.254/latest/meta-data/', 'http://10.0.0.1/', 'http://192.168.0.1/',
     'http://172.16.0.1/', 'http://[::1]/', 'http://[::ffff:127.0.0.1]/', 'http://[fe80::1]/',
     'http://[fc00::1]/', 'http://[::]/', 'http://0.0.0.0/',
-    // the 1.0.7 bypasses
     'http://[::7f00:1]/', 'http://[::a9fe:a9fe]/', 'http://[::127.0.0.1]/', 'http://[::169.254.169.254]/',
     // encodings and authority confusion
     'http://%31%32%37%2E%30%2E%30%2E%31/', 'http://user@127.0.0.1/', 'http://a@169.254.169.254/',
