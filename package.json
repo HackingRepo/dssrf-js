@@ -46,7 +46,7 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
-    "ipaddr.js": "2.3.0"
+    "ipaddr.js": "2.5.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
